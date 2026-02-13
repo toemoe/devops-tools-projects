@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  fastcgi-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastcgi-server
+    networks:
+      - app-network
+  
+  nginx-proxy:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - "80:8080"
+    volumes:
+      - ./nginx-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - app-network
+    depends_on:
+      - fastcgi-server
+
+networks:
+  app-network:
+    driver: bridge
