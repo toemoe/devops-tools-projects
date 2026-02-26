@@ -1,0 +1,55 @@
+stages:
+  - build
+  - style
+  - test
+  - deploy
+
+build:
+  stage: build
+  tags:
+    - shell
+  script:
+    - set -e
+    - cd src/program && make
+  artifacts:
+    paths:
+      - src/program/DO
+    expire_in: 30 days
+
+style:
+  stage: style
+  tags:
+    - shell
+  script:
+    - set -e
+    - cd src/program
+    - echo "Running clang-format check..."
+    - clang-format -n *.c 2>&1 | tee format_output.txt
+    - if clang-format -n *.c 2>&1 | grep -q "warning\|error"; then echo "Code style check failed!"; exit 1; fi
+    - echo "Code style check passed!"
+
+test:
+  stage: test
+  tags:
+    - shell
+  script:
+    - cd src/program && make
+    - set -e
+    - make test
+  dependencies:
+    - build
+
+deploy:
+  stage: deploy
+  tags:
+    - shell
+  when: manual
+  script:
+    - set -e
+    - cd src/program
+    - echo "Starting deployment to vm..."
+    - scp -o StrictHostKeyChecking=no DO gka@192.168.0.104:/usr/local/bin/
+    - echo "Deployment completed successfully!"
+  dependencies:
+    - build
+    - test
